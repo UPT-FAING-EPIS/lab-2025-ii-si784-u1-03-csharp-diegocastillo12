@@ -32,8 +32,8 @@ jobs:
       
       - name: Install prospector2html
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install prospector2html
+          python -m pip install --upgrade pip --break-system-packages
+          python -m pip install prospector2html --break-system-packages
       
       - name: Generate HTML report
         run: prospector-html --input semgrep.json --output semgrep-report.html --filter semgrep

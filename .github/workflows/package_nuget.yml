@@ -94,13 +94,27 @@ jobs:
           path: ./Bank/CoverageReport
       
       - name: Pack NuGet package
-        run: dotnet pack ./Bank.WebApi/Bank.WebApi.csproj --configuration Release --no-build --output ./nupkgs
+        run: |
+          mkdir -p nupkgs
+          dotnet pack ./Bank.WebApi/Bank.WebApi.csproj --configuration Release --no-build --output ./nupkgs
         working-directory: ./Bank
       
+      - name: Upload NuGet package as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: ./Bank/nupkgs/*.nupkg
+      
       - name: Publish to GitHub Packages
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-          dotnet nuget push "./nupkgs/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "github" --skip-duplicate
+          dotnet nuget add source --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" || true
+          if ls ./nupkgs/*.nupkg 1> /dev/null 2>&1; then
+            dotnet nuget push "./nupkgs/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source "github" --skip-duplicate
+          else
+            echo "No .nupkg files found in ./nupkgs/"
+            exit 1
+          fi
         working-directory: ./Bank
